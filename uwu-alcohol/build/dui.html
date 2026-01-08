@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Burger Shot Order Board</title>
+    <style>
+        /*
+         * GLOBAL STYLES & FONT
+         */
+        @font-face {
+            font-family: 'Techno Disorder'; /* A commonly used GTA-style font */
+            src: url('fonts/technodisorder.woff2') format('woff2'),
+                 url('fonts/technodisorder.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        body {
+            background-color: rgba(0, 0, 0, 0); /* Full transparency for DUI */
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            font-family: 'Techno Disorder', 'Arial Narrow', Arial, sans-serif; /* Fallback fonts */
+            color: #E0E0E0; /* Default text color */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100vw; /* Occupy full viewport width */
+            height: 100vh; /* Occupy full viewport height */
+        }
+
+        /*
+         * CONTAINER FOR THE WHOLE UI BOARD
+         */
+        .board-container {
+            width: 100%; /* Make it fill the DUI dimensions */
+            height: 100%; /* Make it fill the DUI dimensions */
+            display: flex; /* Use flexbox for main layout */
+            flex-direction: column; /* Stack header and order list vertically */
+            background-color: #0d0d0d; /* Dark background as seen in the image */
+            border: 2px solid #333; /* Slight border for separation */
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); /* Subtle shadow */
+            box-sizing: border-box; /* Include padding and border in element's total width and height */
+        }
+
+        /*
+         * HEADER SECTION
+         */
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 2px solid #222;
+            box-sizing: border-box;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title img {
+            height: 30px;
+            width: auto;
+        }
+
+        /*
+         * ORDER LIST SECTION
+         */
+        .order-list {
+            flex-grow: 1; /* Takes up available space */
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #222; /* Separator line */
+            padding-bottom: 5px;
+        }
+
+        .header-item {
+            font-size: 1.2em;
+            font-weight: bold;
+            flex: 1;
+            text-align: center;
+        }
+        .header-item.in-progress { 
+            color: #FFA500; /* Orange */
+            border-right: 2px solid #333; /* Divider line between IN PROGRESS and READY */
+        }
+        .header-item.ready { color: #00FF00; /* Green */ }
+
+        .order-numbers {
+            display: flex;
+            flex-grow: 1;
+        }
+
+        .column {
+            flex: 1;
+            text-align: center;
+            padding: 0 10px;
+        }
+        .column.in-progress-column {
+            border-right: 2px solid #333; /* Divider line extending full height */
+        }
+
+        .order-number-item {
+            font-size: 2.5em; /* Large numbers */
+            margin: 8px 0;
+            line-height: 1.2;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.2); /* Subtle glow */
+        }
+        .order-number-item.in-progress { color: #FFA500; }
+        .order-number-item.ready { color: #00FF00; }
+    </style>
+</head>
+<body>
+    <div class="board-container">
+        <div class="header">
+            <div class="title" id="titleContainer">
+                <img id="titleImage" src="" alt="Title Image" style="display:none;">
+                <span id="titleText">BURGER SHOT ORDER BOARD</span>
+            </div>
+        </div>
+        <div class="order-list">
+            <div class="order-header">
+                <div class="header-item in-progress">IN PROGRESS</div>
+                <div class="header-item ready">READY</div>
+            </div>
+            <div class="order-numbers">
+                <div class="column in-progress-column" id="in-progress-column">
+                    <!-- Dynamically populated -->
+                </div>
+                <div class="column ready-column" id="ready-column">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Listen for messages from Lua (Cfx)
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+            if (data.action === 'updateOrderBoard') {
+                // Set dynamic title and titleImage
+                const titleText = document.getElementById('titleText');
+                const titleImage = document.getElementById('titleImage');
+                if (data.title) {
+                    titleText.innerText = data.title;
+                }
+                if (data.titleImage) {
+                    titleImage.src = data.titleImage;
+                    titleImage.style.display = 'block';
+                } else {
+                    titleImage.style.display = 'none';
+                }
+
+                const inProgressColumn = document.getElementById('in-progress-column');
+                const readyColumn = document.getElementById('ready-column');
+
+                // Clear existing numbers
+                inProgressColumn.innerHTML = '';
+                readyColumn.innerHTML = '';
+
+                // Add new 'in progress' numbers
+                if (data.inProgress && Array.isArray(data.inProgress)) {
+                    data.inProgress.forEach(num => {
+                        const div = document.createElement('div');
+                        div.className = 'order-number-item in-progress';
+                        div.innerText = num;
+                        inProgressColumn.appendChild(div);
+                    });
+                }
+
+                // Add new 'ready' numbers
+                if (data.ready && Array.isArray(data.ready)) {
+                    data.ready.forEach(num => {
+                        const div = document.createElement('div');
+                        div.className = 'order-number-item ready';
+                        div.innerText = num;
+                        readyColumn.appendChild(div);
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

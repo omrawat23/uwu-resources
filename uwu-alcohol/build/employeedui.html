@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Employee Order Board</title>
+  <style>
+    @font-face {
+      font-family: 'Techno Disorder';
+      src: url('fonts/technodisorder.woff2') format('woff2'),
+           url('fonts/technodisorder.woff') format('woff');
+      font-weight: normal;
+      font-style: normal;
+    }
+    :root{
+      --bg:#0b0b0b;
+      --card-bg:#0f0f0f;
+      --accent:#e11d25; /* red border */
+      --muted:#222;
+      --green:#17c964;
+      --yellow:#f59e0b;
+      --text:#e6e6e6;
+      --sub:#9aa0a6;
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      font-family:'Techno Disorder', Arial, sans-serif;
+      background:transparent;
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .wrap{
+      width:100vw;
+      height:100vh;
+      display:flex;
+      gap:18px;
+      padding:18px;
+      box-sizing:border-box;
+    }
+    .left{
+      flex:1 1 65%;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:8px 12px;
+      border-bottom:2px solid var(--muted);
+    }
+    .title {
+      font-size:24px;
+      font-weight:700;
+      letter-spacing:1px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .title img {
+      height:40px;
+      width:auto;
+    }
+    .meta {
+      text-align:right;
+    }
+    .clock { font-size:18px; color:var(--green); }
+    .employee { font-size:12px; color:var(--sub); }
+
+    .grid {
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+      padding-top:6px;
+      align-content:start;
+      overflow:auto;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE and Edge */
+    }
+    .grid::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
+    }
+
+    .card {
+      background:linear-gradient(180deg,var(--card-bg),#080808);
+      border:3px solid var(--accent);
+      border-radius:6px;
+      min-height:200px;
+      display:flex;
+      flex-direction:column;
+      box-shadow:0 6px 18px rgba(0,0,0,0.6);
+      position:relative;
+    }
+    .card .head {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:10px 12px;
+      border-bottom:2px solid rgba(255,255,255,0.02);
+    }
+    .order-id { font-size:20px; font-weight:700;}
+    .status {
+      padding:5px 8px;
+      border-radius:6px;
+      font-size:12px;
+      font-weight:700;
+      color:#000;
+      text-transform:uppercase;
+    }
+    .status.ready { background:var(--green); }
+    .status.pending { background:var(--yellow); color:#000; }
+    .status.closed { background:#6b7280; color:#fff; }
+
+    .items {
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      flex:1;
+      overflow:auto;
+    }
+    .item-row {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent);
+      padding:8px;
+      border-radius:4px;
+    }
+    .item-counter {
+      background:var(--green);
+      color:#000;
+      font-weight:700;
+      min-width:28px;
+      height:28px;
+      display:inline-flex;
+      justify-content:center;
+      align-items:center;
+      border-radius:6px;
+      font-size:14px;
+    }
+    .item-label { color:var(--text); font-size:14px; }
+
+    .card .footer {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:8px 12px;
+      border-top:2px solid rgba(255,255,255,0.02);
+      font-size:12px;
+      color:var(--sub);
+    }
+
+    /* empty state */
+    .empty {
+      color:var(--sub);
+      padding:28px;
+      text-align:center;
+    }
+
+    /* small screens fallback */
+    @media (max-width:1000px){
+      .grid { grid-template-columns:repeat(2,1fr); }
+    }
+    @media (max-width:640px){
+      .wrap { flex-direction:column; padding:10px; }
+      .grid { grid-template-columns:repeat(1,1fr); }
+      .left, .right { width:100%; }
+    }
+
+    /* right panel */
+    .right {
+      width:34%;
+      background:linear-gradient(180deg,#070707,#0a0a0a);
+      border:2px solid #111;
+      border-radius:6px;
+      padding:12px;
+      box-sizing:border-box;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+    }
+    .logo { 
+      width:180px; 
+      filter:drop-shadow(0 6px 10px rgba(255,0,100,0.08)); 
+    }
+    .brand { font-size:22px; font-weight:800; color:#ff4b9c; letter-spacing:1px;}
+    .subtitle { color:var(--sub); font-size:12px;}
+    .summary { width:100%; display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+    .summary .line { display:flex; justify-content:space-between; color:var(--sub); font-size:13px; }
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="left">
+      <div class="header">
+        <div class="title" id="titleContainer">
+          <img id="titleImage" src="" alt="Title Image" style="display:none;">
+          <span id="titleText">BURGER SHOT — KITCHEN DISPLAY</span>
+        </div>
+      </div>
+
+      <div class="grid" id="ordersGrid">
+        <!-- cards injected here -->
+      </div>
+      <div class="empty" id="emptyState">No active orders</div>
+    </div>
+
+  </div>
+
+  <script>
+    // // Add this at the top of your employeedui.html <script> section
+    // window.addEventListener('error', function(e) {
+    //     console.error('[Employee DUI Error]', e.message, e.filename, e.lineno);
+    // });
+
+    // console.log('[Employee DUI] Script loaded successfully');
+
+    // Helper to format time (kept for footer timestamps)
+    function nowTimeStr() {
+      const d = new Date();
+      return d.toLocaleTimeString();
+    }
+
+    // Render orders: expects array of orders objects
+    // order = { order_id: "K-280", status: "ready"|"pending", items: [{quantity:1,label:"Fries"}], employee: "John" , created_at: "..." }
+    function renderOrders(orders, terminalName) {
+      const grid = document.getElementById('ordersGrid');
+      const empty = document.getElementById('emptyState');
+      grid.innerHTML = ''; // clear
+      if (!orders || orders.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display='none';
+      orders.forEach((o) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const head = document.createElement('div');
+        head.className='head';
+        const idspan = document.createElement('div');
+        idspan.className='order-id';
+        idspan.innerText = '#' + (o.order_id || o.id || 'N/A');
+
+        const status = document.createElement('div');
+        const s = (o.status || 'pending').toLowerCase();
+        let statusClass = 'status pending';
+        if (s === 'ready') { statusClass = 'status ready'; }
+        if (s === 'cooking' || s === 'pending') { statusClass = 'status pending'; }
+        if (s === 'completed' || s === 'closed') statusClass = 'status closed';
+        status.className = statusClass;
+        status.innerText = (o.status || '').toUpperCase();
+
+        head.appendChild(idspan);
+        head.appendChild(status);
+
+        const items = document.createElement('div');
+        items.className='items';
+        const list = o.items && Array.isArray(o.items) ? o.items : [];
+        if (list.length === 0) {
+          const noItem = document.createElement('div');
+          noItem.className='item-row';
+          noItem.innerText = 'No items';
+          items.appendChild(noItem);
+        } else {
+          list.forEach(it => {
+            const row = document.createElement('div');
+            row.className='item-row';
+            const count = document.createElement('div');
+            count.className='item-counter';
+            count.innerText = (it.quantity || 1);
+            const label = document.createElement('div');
+            label.className='item-label';
+            label.innerText = it.label || it.name || 'Item';
+            row.appendChild(count);
+            row.appendChild(label);
+            items.appendChild(row);
+          })
+        }
+
+        const footer = document.createElement('div');
+        footer.className='footer';
+        const left = document.createElement('div');
+        left.innerText = o.employee ? ('Employee: ' + o.employee) : 'Unassigned';
+        const right = document.createElement('div');
+        right.innerText = o.created_at ? (new Date(o.created_at)).toLocaleTimeString() : nowTimeStr();
+        footer.appendChild(left);
+        footer.appendChild(right);
+
+        card.appendChild(head);
+        card.appendChild(items);
+        card.appendChild(footer);
+
+        grid.appendChild(card);
+      });
+    }
+
+    // Listen for messages from Lua (Cfx)
+    window.addEventListener('message', function(event) {
+      const data = event.data;
+      if (!data || !data.action) return;
+
+      if (data.action === 'updateEmployeeBoard') {
+        // Set dynamic title and titleImage
+        const titleText = document.getElementById('titleText');
+        const titleImage = document.getElementById('titleImage');
+        if (data.title) {
+          titleText.innerText = data.title;
+        }
+        if (data.titleImage) {
+          titleImage.src = data.titleImage;
+          titleImage.style.display = 'block';
+        } else {
+          titleImage.style.display = 'none';
+        }
+
+        // Accept orders array in data.orders
+        const orders = data.orders || [];
+        // Each order expected to have: order_id, status, items (JSON or array), employee, created_at
+        const normalized = orders.map(o => {
+          let items = [];
+          try {
+            if (Array.isArray(o.items)) items = o.items;
+            else if (typeof o.items === 'string' && o.items.length) items = JSON.parse(o.items);
+            else items = [];
+          } catch(e){ items = []; }
+          return {
+            order_id: o.order_id || o.id || o.orderId || o.order_id,
+            status: (o.status || 'pending'),
+            items: items,
+            employee: o.employee_name || o.employee || o.assigned_to || null,
+            created_at: o.created_at || o.createdAt || Date.now()
+          };
+        });
+        renderOrders(normalized, data.terminal || 'POS-01');
+      }
+    });
+
+    // optional: dummy initial data for preview (remove in production)
+    // Commented out to prevent interference with real-time updates
+    /*
+    (function demo(){
+      const sample = [
+        { order_id: 'K-280', status: 'ready', items:[{quantity:1,label:'Fries'},{quantity:1,label:'Shot Cola'}], employee: 'Alice', created_at: new Date().toISOString()},
+        { order_id: 'K-464', status: 'pending', items:[{quantity:1,label:'Thx Burger'},{quantity:1,label:'Chicken Burger'},{quantity:1,label:'Sunday'}], employee: null, created_at: new Date().toISOString()},
+        { order_id: 'K-521', status: 'ready', items:[{quantity:1,label:'Fish Burger'},{quantity:1,label:'Cheese Burger'}], employee: 'Bob', created_at: new Date().toISOString()},
+        { order_id: 'K-983', status: 'pending', items:[{quantity:1,label:'Chicken Crockets'}], employee: null, created_at: new Date().toISOString()},
+        { order_id: 'K-117', status: 'pending', items:[{quantity:1,label:'Big Burger'},{quantity:1,label:'Korean BBQ Burger'}], employee: null, created_at: new Date().toISOString()},
+        { order_id: 'K-317', status: 'pending', items:[{quantity:1,label:'Korean BBQ Burger'}], employee: null, created_at: new Date().toISOString()}
+      ];
+      // initial demo render (can be commented out)
+      renderOrders(sample, 'POS-01');
+    })();
+    */
+  </script>
+</body>
+</html>
