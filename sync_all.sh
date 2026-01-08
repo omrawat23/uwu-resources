@@ -3,10 +3,10 @@
 # Source folder (your template)
 SOURCE="uwu-alcohol"
 
-# All target folders (list all 30 folders here)
+# All target folders (add all 30 folder names here)
 TARGETS=(
     "uwu-thetacofarmer"
-    # ... add all your folder names
+    # Add the rest of your 30 folders here
 )
 
 # Folders to sync (everything except 'shared')
@@ -23,7 +23,11 @@ for target in "${TARGETS[@]}"; do
     # Sync directories
     for dir in "${SYNC_DIRS[@]}"; do
         if [ -d "$SOURCE/$dir" ]; then
-            rsync -av --delete "$SOURCE/$dir/" "$target/$dir/"
+            # Remove target directory if exists
+            rm -rf "$target/$dir"
+            # Copy from source
+            cp -r "$SOURCE/$dir" "$target/$dir"
+            echo "  ✓ Synced $dir"
         fi
     done
     
@@ -31,8 +35,9 @@ for target in "${TARGETS[@]}"; do
     for file in "${SYNC_FILES[@]}"; do
         if [ -f "$SOURCE/$file" ]; then
             cp "$SOURCE/$file" "$target/$file"
+            echo "  ✓ Synced $file"
         fi
     done
 done
 
-echo "Sync complete!"
+echo "✓ Sync complete!"
